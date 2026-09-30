@@ -1,0 +1,11 @@
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.spl
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+fig_src/preview/
+fig_src/__pycache__/
