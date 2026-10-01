@@ -189,8 +189,12 @@ def boundary(psi_deg, level):
     return [np.asarray(p) for p in polys.values()]
 
 
-def slice_set(state, xlim, ylim, h=0.01, level=0.0):
-    """Set in head point coordinates for one (psi, u, v, r, delta, F), from the value model."""
+def slice_set(state, xlim, ylim, h=0.01, level=0.0, sigma=0.07, win=75):
+    """Set in head point coordinates for one (psi, u, v, r, delta, F), from the value model.
+
+    sigma and win match the smoothing of the exported boundaries (export_set_params.py),
+    so a slice drawn here looks like the headings figure.
+    """
     psi, u, v, r, dl, F = state
     xs = np.arange(xlim[0], xlim[1] + 1e-9, h)
     ys = np.arange(ylim[0], ylim[1] + 1e-9, h)
@@ -206,7 +210,7 @@ def slice_set(state, xlim, ylim, h=0.01, level=0.0):
     dyr = u * math.sin(psi) + v * math.cos(psi)
     ok = abs(psi) <= THETA and abs(dxr) <= U_DOCK and abs(dyr) <= U_DOCK
     tg = (np.abs(X) <= CX) & (np.abs(Y) <= CY) & ok
-    return outline(xs, ys, mask_from_V(V, av, tg, level, h=h))
+    return outline(xs, ys, mask_from_V(V, av, tg, level, sigma=sigma, h=h), win=win)
 
 
 # ---------------------------------------------------------------- drawing

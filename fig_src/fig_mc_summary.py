@@ -13,7 +13,7 @@ C.style()
 S = C.scenarios()
 N = len(S)
 rng = np.random.default_rng(3)
-fig, axs = plt.subplots(1, 3, figsize=(7.2, 2.35), gridspec_kw=dict(wspace=0.36))
+fig, axs = plt.subplots(1, 3, figsize=(7.2, 1.62), gridspec_kw=dict(wspace=0.36))
 xpos = np.arange(len(C.CTRL))
 names = [lab.replace(' (', '\n(') for _, lab in C.CTRL]
 
@@ -49,7 +49,7 @@ for i, (k, _) in enumerate(C.CTRL):
 ax.set_xlim(-0.5, len(C.CTRL) - 0.35)
 ax.set_ylim(0, None)
 ax.set_ylabel('docking time [s]')
-ax.set_title('(b) Docking time (docked runs)')
+ax.set_title('(b) Docking time')
 
 # (c) minimum clearance of every run
 ax = axs[2]
@@ -79,5 +79,5 @@ handles = [Line2D([], [], ls='', marker='s', ms=6, color=C.DOCK, label='dock'),
            Line2D([], [], color=C.INK, lw=1.0, label='worst run'),
            Line2D([], [], ls='', marker='o', ms=3.5, color=C.INK, label=r'mean $\pm$ one std')]
 fig.legend(handles=handles, loc='lower center', ncol=5, frameon=False,
-           bbox_to_anchor=(0.5, -0.2), handlelength=1.4, columnspacing=1.4)
+           bbox_to_anchor=(0.5, -0.3), handlelength=1.4, columnspacing=1.4)
 C.save(fig, 'montecarlo_summary')

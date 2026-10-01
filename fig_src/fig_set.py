@@ -35,8 +35,6 @@ for ax, (key, deg) in zip(axs, psis):
                                lw=0.6, ls=':', zorder=5))
     for p in C.boundary(deg, 0.0):
         ax.plot(p[:, 0], p[:, 1], color='#333333', lw=0.9, zorder=4)
-    for p in C.boundary(deg, C.TAU):
-        ax.plot(p[:, 0], p[:, 1], color='#333333', lw=0.8, ls='--', zorder=4)
     ax.set_title(r'$\psi_r = %+d^\circ$' % deg if deg else r'$\psi_r = 0^\circ$')
     ax.set_xlabel(r'$x_h$ [m]')
     ax.set_xticks([-3, -2, -1, 0, 1])
@@ -51,8 +49,7 @@ cb.ax.tick_params(labelsize=7)
 handles = [Patch(fc=C.ARM, ec='none', label='cradle'),
            Patch(fc=C.MS_FILL, ec=C.MS_EDGE, lw=0.8, label='mothership'),
            Patch(fc='#e9e9e9', ec='#9a9a9a', hatch='////', lw=0, label='approach wall'),
-           Line2D([], [], color='#333333', lw=0.9, label=r'set boundary $V=0$'),
-           Line2D([], [], color='#333333', lw=0.8, ls='--', label=r'handover $V=\tau$')]
-fig.legend(handles=handles, loc='lower center', ncol=5, frameon=False,
+           Line2D([], [], color='#333333', lw=0.9, label=r'set boundary $V=0$')]
+fig.legend(handles=handles, loc='lower center', ncol=4, frameon=False,
            bbox_to_anchor=(0.5, -0.1), handlelength=1.6, columnspacing=1.2)
 C.save(fig, 'reach_avoid_set')
