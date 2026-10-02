@@ -1,7 +1,9 @@
 """Shared constants, style and helpers for the new_CEP_draft figures.
 
-All figures are drawn from the export in ../../export_z1 (CSV, npz and the TorchScript
-value model), so nothing here needs the training repository, acados or a GPU.
+All figures are drawn from the export in ../../export_z2 (CSV and the TorchScript value
+model), so nothing here needs the training repository, acados or a GPU.  The z2 export carries
+no set grid, so set slices are evaluated from model/brs_value.pt with the smoothing of the
+study's own fig5_headings.py (sigma 0.07 m, outline window 75).
 """
 import csv
 import math
@@ -17,16 +19,17 @@ from matplotlib.patches import Polygon, Rectangle  # noqa: E402
 from scipy import ndimage  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
-DATA = HERE.parents[1] / 'export_z1'
+DATA = HERE.parents[1] / 'export_z2'
 OUT = HERE.parent / 'fig'
 PREVIEW = HERE / 'preview'     # PNG previews, kept out of fig/ and out of git
 
-# ---------------------------------------------------------------- geometry (config.json)
-CX, CY = 0.5, 0.2          # pocket half length / half width [m]
+# ---------------------------------------------------------------- geometry (geometry.json)
+CX, CY = 0.35, 0.175       # pocket half length / half width [m]
 TW = 0.15                  # cradle arm thickness [m]
 HP = 0.3                   # head point offset [m]
+SP = 0.3                   # stern point, astern of the CoG [m]
 Y_MS = -0.5                # mothership side boundary [m]
-Y_WALL = 0.35              # approach wall, closed for x_head >= -CX [m]
+Y_WALL = 0.325             # approach wall, closed for x_head >= -CX [m]
 V_S = 0.5                  # stream speed [m/s]
 DP = (-1.52, 0.0)          # dynamic positioning point, CoG [m]
 TAU = -0.005               # handover threshold
@@ -35,7 +38,9 @@ U_DOCK = 0.24
 XU, UF = -0.1985, 0.0594
 F_TRIM = V_S * abs(XU) / UF
 DELTA_SCALE = 0.01         # physical rudder angle = 0.01 * delta [rad]
-FUN = dict(b=1.5, x0=-1.4, aL=0.2, y0L=0.4, aR=0.35, y0R=0.55)   # RaCBF funnel corridor
+# RaCBF funnel corridor resized for the 0.70 x 0.35 pocket (controller_params.json).
+# L is the UPPER bound on y (open side), R the lower bound (mothership side).
+FUN = dict(b=3.0, x0=-0.8159, aL=0.1894, y0L=0.3606, aR=0.1641, y0R=0.3359)
 
 CTRL = [('prop', 'Proposed'), ('racbf1', 'RaCBF (1)'), ('racbf2', 'RaCBF (2)')]
 
@@ -85,7 +90,18 @@ def read_csv(name):
 
 
 def scenarios():
-    return read_csv('scenarios.csv')
+    """outcomes.csv, with the hand over time and the start position added under the names the
+    figure scripts use (prop_t_handover, start_x_rel, start_y_rel)."""
+    rows = read_csv('outcomes.csv')
+    first = {}
+    for r in read_csv('trajectories_prop.csv'):
+        s = int(r['scenario'])
+        if s not in first:
+            first[s] = (float(r['x']) - float(r['CD_x']), float(r['y']))
+    for r in rows:
+        r['prop_t_handover'] = r.get('prop_t_switch', '')
+        r['start_x_rel'], r['start_y_rel'] = (str(v) for v in first[int(r['scenario'])])
+    return rows
 
 
 def trajectories(ctrl):
@@ -119,7 +135,7 @@ def value(states):
     global _VMODEL
     import torch
     if _VMODEL is None:
-        _VMODEL = torch.jit.load(str(DATA / 'brs_value.pt'))
+        _VMODEL = torch.jit.load(str(DATA / 'model' / 'brs_value.pt'))
     with torch.no_grad():
         out = [_VMODEL(torch.as_tensor(states[i:i + 200000], dtype=torch.float32)).numpy()
                for i in range(0, len(states), 200000)]
@@ -128,10 +144,11 @@ def value(states):
 
 # ---------------------------------------------------------------- set helpers
 def avoid_mask(xh, yh, psi, wall=True):
-    """True where the head point / CoG pair violates the collision set (grid in head point frame)."""
+    """True where the bow, CoG or stern violates the collision set (grid in head point frame)."""
     xg, yg = xh, yh
     yc = yg - HP * math.sin(psi)
-    m = (yg < Y_MS) | (yc < Y_MS)
+    ys = yc - SP * math.sin(psi)
+    m = (yg < Y_MS) | (yc < Y_MS) | (ys < Y_MS)
     for x0, x1, y0, y1 in arms():
         m |= (xg >= x0) & (xg <= x1) & (yg >= y0) & (yg <= y1)
     if wall:
@@ -180,20 +197,44 @@ def outline(xs, ys, mask, win=45, min_pts=30):
     return [_smooth_poly(np.asarray(s), win) for s in segs if len(s) >= min_pts]
 
 
-def boundary(psi_deg, level):
-    """Smoothed set boundary polygons exported with the data (set_boundary.csv)."""
-    polys = {}
-    for r in read_csv('set_boundary.csv'):
-        if int(float(r['psi_deg'])) == psi_deg and abs(float(r['level']) - level) < 1e-6:
-            polys.setdefault(r['piece'], []).append((float(r['x_head']), float(r['y_head'])))
-    return [np.asarray(p) for p in polys.values()]
+SET_XL, SET_YL = (-3.0, 0.9), (-0.9, 2.0)
+
+
+def nominal_state(psi_deg):
+    """Nominal slice of fig5_headings.py: zero cradle relative velocity, rudder centred, trim thrust."""
+    p = math.radians(psi_deg)
+    return (p, V_S * math.cos(p), -V_S * math.sin(p), 0.0, 0.0, F_TRIM)
+
+
+def value_slice(state, xlim=SET_XL, ylim=SET_YL, h=0.01):
+    """(xs, ys, V, avoid, target) on a head point grid for one (psi, u, v, r, delta, F)."""
+    psi, u, v, r, dl, F = state
+    xs = np.arange(xlim[0], xlim[1] + 1e-9, h)
+    ys = np.arange(ylim[0], ylim[1] + 1e-9, h)
+    X, Y = np.meshgrid(xs, ys)
+    st = np.zeros((X.size, 8), np.float32)
+    st[:, 0] = X.ravel() - HP * math.cos(psi)
+    st[:, 1] = Y.ravel() - HP * math.sin(psi)
+    st[:, 2:] = [psi, u, v, r, dl, F]
+    V = value(st).reshape(X.shape)
+    av = avoid_mask(X, Y, psi)
+    dxr = u * math.cos(psi) - v * math.sin(psi) - V_S
+    dyr = u * math.sin(psi) + v * math.cos(psi)
+    ok = abs(psi) <= THETA and abs(dxr) <= U_DOCK and abs(dyr) <= U_DOCK
+    tg = (np.abs(X) <= CX) & (np.abs(Y) <= CY) & ok
+    return xs, ys, V, av, tg
+
+
+def boundary(psi_deg, level=0.0, sigma=0.07, win=75):
+    """Smoothed boundary of {V <= level} on the nominal slice at psi_deg, as fig5_headings.py draws it."""
+    xs, ys, V, av, tg = value_slice(nominal_state(psi_deg))
+    return outline(xs, ys, mask_from_V(V, av, tg, level, sigma=sigma), win=win)
 
 
 def slice_set(state, xlim, ylim, h=0.01, level=0.0, sigma=0.07, win=75):
     """Set in head point coordinates for one (psi, u, v, r, delta, F), from the value model.
 
-    sigma and win match the smoothing of the exported boundaries (export_set_params.py),
-    so a slice drawn here looks like the headings figure.
+    sigma and win match the smoothing of the headings figure, so a slice drawn here looks the same.
     """
     psi, u, v, r, dl, F = state
     xs = np.arange(xlim[0], xlim[1] + 1e-9, h)
@@ -238,8 +279,8 @@ def draw_set(ax, polys, fill=True, ls='--', lw=1.1, alpha=0.45, z=3, label=None)
 
 
 def hull(ax, cx, cy, psi, fc, ec, alpha=0.55, z=8, lw=0.7):
-    """USV outline at model scale, bow at the head point."""
-    hp, beam, aft = HP, 0.13, 0.34
+    """USV outline at model scale (0.60 x 0.25 m), bow at the head point, stern SP astern of the CoG."""
+    hp, beam, aft = HP, 0.125, SP
     pts = np.array([[hp, 0.0], [hp - 0.05, 0.07], [hp - 0.16, beam], [-aft, beam * 0.85],
                     [-aft, -beam * 0.85], [hp - 0.16, -beam], [hp - 0.05, -0.07]])
     c, s = math.cos(psi), math.sin(psi)
@@ -248,5 +289,6 @@ def hull(ax, cx, cy, psi, fc, ec, alpha=0.55, z=8, lw=0.7):
 
 
 def funnel_curves(x):
+    """(upper, lower) funnel bounds on the head point y.  L sets the upper (open) side, R the lower."""
     t = np.tanh(FUN['b'] * (FUN['x0'] - x))
-    return FUN['aR'] * t + FUN['y0R'], -(FUN['aL'] * t + FUN['y0L'])
+    return FUN['aL'] * t + FUN['y0L'], -(FUN['aR'] * t + FUN['y0R'])
