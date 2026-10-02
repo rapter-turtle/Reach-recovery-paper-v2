@@ -270,11 +270,14 @@ def draw_geometry(ax, xlim, ylim, wall=False, target=True):
     ax.set_aspect('equal')
 
 
-def draw_set(ax, polys, fill=True, ls='--', lw=1.1, alpha=0.45, z=3, label=None):
+SET_LINE = '#333333'        # outline colour of the headings figure, reused wherever a set is drawn
+
+
+def draw_set(ax, polys, fill=True, ls='-', lw=0.9, alpha=0.45, z=3, label=None, edge=SET_LINE):
     for i, p in enumerate(polys):
         if fill:
             ax.add_patch(Polygon(p, closed=True, fc=SET_FILL, ec='none', alpha=alpha, zorder=z))
-        ax.plot(p[:, 0], p[:, 1], color=SET_EDGE, lw=lw, ls=ls, zorder=z + 0.1,
+        ax.plot(p[:, 0], p[:, 1], color=edge, lw=lw, ls=ls, zorder=z + 0.1,
                 label=label if i == 0 else None)
 
 

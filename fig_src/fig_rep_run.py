@@ -40,7 +40,7 @@ C.draw_geometry(ax, XL, YL, wall=False, target=True)
 
 # learned set at the handover state, in head point coordinates
 sh = (d['psi'][ih - 1], d['u'][ih - 1], d['v'][ih - 1], d['r'][ih - 1], d['delta'][ih - 1], d['F'][ih - 1])
-C.draw_set(ax, C.slice_set(sh, (XL[0], XL[1]), (YL[0], YL[1])), alpha=0.35, z=2.5)
+C.draw_set(ax, C.slice_set(sh, (XL[0], XL[1]), (YL[0], YL[1]), level=C.TAU), alpha=0.35, z=2.5)
 
 ax.plot(d['xr'][:ih], d['yr'][:ih], color=C.PH1, lw=1.3, zorder=7)
 ax.plot(d['xr'][ih - 1:], d['yr'][ih - 1:], color=C.PH2, lw=1.3, zorder=7)
@@ -61,7 +61,7 @@ leg = [Line2D([], [], color=C.PH1, lw=1.3, label='Phase 1'),
        Line2D([], [], ls='', marker='o', ms=3, color='#c2185b', label='head point'),
        Line2D([], [], ls='', marker='D', ms=4.5, color='#333333', label='DP point'),
        Line2D([], [], ls='', marker='*', ms=8, color='#b03a2e', label='cradle center'),
-       Patch(fc=C.SET_FILL, ec=C.SET_EDGE, ls='--', alpha=0.6, label='set at handover')]
+       Patch(fc=C.SET_FILL, ec=C.SET_LINE, lw=0.9, alpha=0.6, label='set at handover')]
 ax.legend(handles=leg, loc='upper right', fontsize=7, frameon=True, framealpha=0.95,
           edgecolor='#cccccc', handlelength=1.4, borderpad=0.4, labelspacing=0.3)
 
