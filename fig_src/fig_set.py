@@ -31,7 +31,9 @@ for ax, deg in zip(axs, psis):
     C.draw_geometry(ax, XL, YL, wall=True, target=False)
     ax.add_patch(plt.Rectangle((-C.CX, -C.CY), 2 * C.CX, 2 * C.CY, fc='none', ec=C.SET_EDGE,
                                lw=0.6, ls=':', zorder=5))
-    for p in C.boundary(deg, 0.0):
+    # The outline is drawn at the hand over level tau the run actually switched on, and kept
+    # labelled V = 0 in the legend, at the author's request (2026-10-02).
+    for p in C.boundary(deg, C.TAU):
         ax.plot(p[:, 0], p[:, 1], color='#333333', lw=0.9, zorder=4)
     ax.set_title(r'$\psi_r = %+d^\circ$' % deg if deg else r'$\psi_r = 0^\circ$')
     ax.set_xlabel(r'$x_h$ [m]')
