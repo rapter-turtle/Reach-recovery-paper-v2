@@ -240,7 +240,7 @@ where each $g_i$ is the signed margin of one obstacle, positive when it is viola
 \begin{figure*}[t]
   \centering
   \includegraphics[width=\linewidth]{fig/reach_avoid_set}
-  \caption{Learned robust reach avoid set at three relative headings on the nominal slice with zero cradle relative velocity and trim thrust, drawn over the head point position. The value $V$ is shaded, the set boundary $V=0$ is solid, and the cradle, the mothership, and the hatched approach wall are drawn.}
+  \caption{Learned robust reach avoid set at three relative headings, on the slice with surge at the stream speed along the body, zero sway, zero yaw rate, rudder centred, and trim thrust, drawn over the head point position. The value $V$ is shaded and the set boundary $V=0$ is solid, with the outline smoothed for display, and the cradle, the mothership, and the hatched approach wall are drawn.}
   \label{fig_set}
 \end{figure*}
 
@@ -269,7 +269,7 @@ The baseline is the Phase 1 DOB-MPC with RaCBF \citep{park2026recovery} carried 
   \label{fig_trajectories}
 \end{figure*}
 
-The learned robust reach avoid set is shown in Fig.~\ref{fig_set} on the nominal slice at three relative headings, with zero cradle relative velocity and trim thrust, drawn over the head point position. The set is largest when the USV is aligned with the cradle and smaller when the bow turns away in either direction, somewhat more so when it turns inboard toward the mothership than outboard. It stays clear of the mothership side and of the approach wall and reaches into the pocket. The handover of Section~\ref{sec_framework} uses the stricter level $\tau$ inside this set. Because the discounted value under approximates the true set, the shaded region is a conservative estimate.
+The learned robust reach avoid set is shown in Fig.~\ref{fig_set} at three relative headings, on the slice with surge at the stream speed along the body, zero sway, zero yaw rate, rudder centred, and trim thrust, drawn over the head point position. With the bow turned inboard toward the mothership the set is largest and leans upward and outboard, away from the mothership, aligned with the cradle it is a band elongated along the approach line, and with the bow turned outboard it is smallest, a narrow strip low along the approach line. In every panel it reaches into the pocket and stays clear of the mothership side and the approach wall. The handover of Section~\ref{sec_framework} uses the stricter level $\tau$ inside this set. Because the discounted value under approximates the true set, the shaded region is a conservative estimate.
 
 A representative recovery is shown in Fig.~\ref{fig_representative}, a scenario that starts far astern and outboard and that the conservative baseline fails to complete. In the left panel Phase 1 carries the USV to the DP circle, where the handover takes place, and the Phase 2 policy turns the hull into the pocket from inside the learned set evaluated at the handover state. In the right panels the value falls through zero during the Phase 1 approach and drops below $\tau$ well before the handover, which waits until the USV reaches the DP circle. Thrust sits at its upper limit early in the approach, is reduced and reaches reverse just before the handover, after which the policy raises it briefly and eases it off so the hull enters slowly, while the rudder stays inside its limits. The clearance decreases toward the cradle and stays positive throughout, so the recovery is safe and admissible at once.
 

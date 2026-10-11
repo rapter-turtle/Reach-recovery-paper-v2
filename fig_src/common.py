@@ -201,9 +201,11 @@ SET_XL, SET_YL = (-3.0, 0.9), (-0.9, 2.0)
 
 
 def nominal_state(psi_deg):
-    """Nominal slice of fig5_headings.py: zero cradle relative velocity, rudder centred, trim thrust."""
+    """Nominal slice of the author's fig_set.py: surge u = V_s along the body, v = r = 0, rudder
+    centred, trim thrust.  (Earlier versions used zero cradle relative velocity, u = V_s cos psi and
+    v = -V_s sin psi, which tilts the set the other way at nonzero heading.)"""
     p = math.radians(psi_deg)
-    return (p, V_S * math.cos(p), -V_S * math.sin(p), 0.0, 0.0, F_TRIM)
+    return (p, V_S, 0.0, 0.0, 0.0, F_TRIM)
 
 
 def value_slice(state, xlim=SET_XL, ylim=SET_YL, h=0.01):
@@ -225,17 +227,123 @@ def value_slice(state, xlim=SET_XL, ylim=SET_YL, h=0.01):
     return xs, ys, V, av, tg
 
 
-def boundary(psi_deg, level=0.0, sigma=0.07, win=75):
-    """Smoothed boundary of {V <= level} on the nominal slice at psi_deg, as fig5_headings.py draws it."""
-    xs, ys, V, av, tg = value_slice(nominal_state(psi_deg))
-    return outline(xs, ys, mask_from_V(V, av, tg, level, sigma=sigma), win=win)
+def wall_shift(xs, ys, av, level, deep, lam):
+    """Raise the drawn level toward `deep` near the cradle and its approach wall.
+
+    Returns an array to ADD to the smoothed field so that the outline follows the V = deep contour
+    beside the cradle (where the V = level contour runs flat against the wall face) and the
+    V = level contour far from it, blended with a Gaussian of width `lam` [m] in the distance to
+    the solid cells at x >= -C_X (approach wall and arms; the mothership is left alone).  The shift
+    is never negative, so the drawn region only ever shrinks inside the true V <= level set.
+    """
+    X, Y = np.meshgrid(xs, ys)
+    # only the approach wall (the solid water above the cradle), and only from about the top of the
+    # cradle upward, so the corridor into the mouth and the pocket itself keep their own outline
+    solid = av & (X >= -CX - 1e-9) & (Y >= Y_WALL - 1e-9)
+    h = float(xs[1] - xs[0])
+    d = ndimage.distance_transform_edt(~solid) * h
+    y0, y1 = CY - 0.05, Y_WALL
+    ramp = np.clip((Y - y0) / (y1 - y0), 0.0, 1.0)
+    ramp = ramp * ramp * (3 - 2 * ramp)
+    return (level - deep) * np.exp(-(d / lam) ** 2) * ramp
 
 
-def slice_set(state, xlim, ylim, h=0.01, level=0.0, sigma=0.07, win=75):
+def corner_weight(xs, ys, xa=-1.5, xb=-0.9):
+    """Smooth 0..1 weight for the region beside and above the cradle: x past xa..xb and y above
+    the cradle top.  Used to trim the shoulder of the set that rises against the approach wall."""
+    X, Y = np.meshgrid(xs, ys)
+    sx = np.clip((X - xa) / (xb - xa), 0.0, 1.0)
+    sy = np.clip((Y - (CY - 0.05)) / (Y_WALL - (CY - 0.05)), 0.0, 1.0)
+    return (sx * sx * (3 - 2 * sx)) * (sy * sy * (3 - 2 * sy))
+
+
+def author_polys(xs, ys, V, av, level, smooth=4.0, wallfill=0.05, openxy=(110, 6), openell=True,
+                 rounding=10, postsmooth=1.0, maskblur=14, shift=None, allow=None):
+    """Set outline by the author's pipeline (fig_set.py / SET_FIGURE_SMOOTHING.md, final settings).
+
+    All lengths are in grid cells of a 5 mm grid.  Order: fill the solid cells with `wallfill`,
+    Gaussian `smooth`, solid back to 1; morphological opening with a wide flat ellipse
+    (`openxy`, semi axes) to cut narrow spikes, closing with a disk of `rounding` to round the
+    corners it leaves, kept inside free water; Gaussian `smooth * postsmooth`; blur the set mask by
+    `maskblur` and re-cut at a half.  Each panel uses its OWN avoid mask (fig_set.py reads the
+    last heading's mask for every panel, which is a slip).  Returns (polygons, processed field).
+    """
+    v = np.array(V, dtype=float)
+    v[av] = wallfill
+    if smooth > 0:
+        v = ndimage.gaussian_filter(v, smooth)
+    v[av] = 1.0
+    if shift is not None:
+        v = v + shift
+    w, h = openxy
+    if openell:
+        yy, xx = np.ogrid[-h:h + 1, -w:w + 1]
+        el = (xx / float(w)) ** 2 + (yy / float(h)) ** 2 <= 1.0
+    else:
+        el = np.ones((h, w), bool)
+    keep = ndimage.binary_opening(v <= level, structure=el)
+    if rounding > 0:
+        r = int(rounding)
+        yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
+        keep = ndimage.binary_closing(keep, structure=(xx ** 2 + yy ** 2) <= rounding ** 2)
+        keep &= ~av
+    if allow is not None:          # optional extra trim; it can only remove cells
+        keep &= allow
+    v = np.where(keep, np.minimum(v, level - 1e-6), np.maximum(v, level + 1e-6))
+    v = ndimage.gaussian_filter(v, max(smooth * postsmooth, 1.0))
+    if maskblur > 0:
+        m = (ndimage.gaussian_filter((v <= level).astype(float), maskblur) >= 0.5) & ~av
+        v = np.where(m, np.minimum(v, level - 1e-6), np.maximum(v, level + 1e-6))
+    fig = plt.figure()
+    try:
+        segs = fig.gca().contour(xs, ys, v, levels=[level]).allsegs[0]
+    finally:
+        plt.close(fig)
+    return [np.asarray(s) for s in segs if len(s) > 20], v
+
+
+AUTHOR_STEP = 0.005     # the grid the author's smoothing parameters are written for
+BAND_DEEP, BAND_OFF = -0.010, 0.15   # candidate Z1 (chosen 2026-10-12): band 0.15 m around V = -0.010
+
+
+def band_polys(xs, ys, V, av, level, deep=None, off=None):
+    """Outline drawn as a band around a deeper contour (candidate Z1).
+
+    The region V <= deep (after the author's wall fill and Gaussian) is grown outward by `off` [m],
+    intersected with the author pipeline's V <= level region and smoothed by the same pipeline, so
+    the outline runs parallel to the deep contours and never leaves the true V <= level set.
+    """
+    deep = BAND_DEEP if deep is None else deep
+    off = BAND_OFF if off is None else off
+    h = float(xs[1] - xs[0])
+    vs = np.array(V, dtype=float); vs[av] = 0.05; vs = ndimage.gaussian_filter(vs, 4.0); vs[av] = 1.0
+    r = int(round(off / h))
+    yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
+    grown = ndimage.binary_dilation(vs <= deep, structure=(xx ** 2 + yy ** 2) <= r * r)
+    return author_polys(xs, ys, V, av, level, allow=grown)[0]
+
+
+def set_polys(xs, ys, V, av, level, method='author'):
+    return band_polys(xs, ys, V, av, level) if method == 'band' else author_polys(xs, ys, V, av, level)[0]
+
+
+def boundary(psi_deg, level=0.0, xlim=None, ylim=None, method='author'):
+    """Boundary of {V <= level} on the nominal slice at psi_deg (author pipeline, or Z1 band)."""
+    xs, ys, V, av, tg = value_slice(nominal_state(psi_deg), xlim or SET_XL, ylim or SET_YL, h=AUTHOR_STEP)
+    return set_polys(xs, ys, V, av, level, method)
+
+
+def slice_set(state, xlim, ylim, h=0.01, level=0.0, sigma=0.07, win=75, method='author'):
     """Set in head point coordinates for one (psi, u, v, r, delta, F), from the value model.
 
-    sigma and win match the smoothing of the headings figure, so a slice drawn here looks the same.
+    The outline uses the author's pipeline (or the Z1 band) on a 5 mm grid, like the headings figure.
     """
+    xs, ys, V, av, tg = value_slice(state, xlim, ylim, h=AUTHOR_STEP)
+    return set_polys(xs, ys, V, av, level, method)
+
+
+def slice_set_old(state, xlim, ylim, h=0.01, level=0.0, sigma=0.07, win=75):
+    """Previous outline (blurred mask contour with a moving average), kept for comparison."""
     psi, u, v, r, dl, F = state
     xs = np.arange(xlim[0], xlim[1] + 1e-9, h)
     ys = np.arange(ylim[0], ylim[1] + 1e-9, h)
