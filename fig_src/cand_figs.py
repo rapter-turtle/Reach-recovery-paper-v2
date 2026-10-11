@@ -25,6 +25,7 @@ F.OUTDIR.mkdir(parents=True, exist_ok=True)
 
 
 PAPER = False      # True: manuscript figures into fig/ (no candidate titles, (1)/(2) labels)
+SET_LEVEL = -0.006 # level the learned set is DRAWN at (author's choice 2026-10-11); the run handed over at C.TAU = -0.005
 
 
 def save(fig, name, paper_name=None):
@@ -67,7 +68,7 @@ def fig5():
         C.draw_geometry(ax, XL, YL, wall=True, target=False)
         ax.add_patch(plt.Rectangle((-C.CX, -C.CY), 2 * C.CX, 2 * C.CY, fc='none', ec=C.SET_EDGE, lw=0.6,
                                    ls=':', zorder=5))
-        for p in C.outline(xs, ys, C.mask_from_V(V, av, tg, C.TAU), win=75):
+        for p in C.outline(xs, ys, C.mask_from_V(V, av, tg, SET_LEVEL), win=75):
             ax.plot(p[:, 0], p[:, 1], color=C.SET_LINE, lw=0.9, zorder=4)
         ax.set_title(r'$\psi_r = %+d^\circ$' % deg if deg else r'$\psi_r = 0^\circ$')
         ax.set_xlabel(r'$x_h$ [m]'); ax.set_xticks([-3, -2, -1, 0])
@@ -100,7 +101,7 @@ def fig6(prop, partners):
     XL = (min(-3.0, d['xr'].min() - 0.4), 1.0); YL = (-0.6, max(1.2, d['yr'].max() + 0.35))
     C.draw_geometry(ax, XL, YL, wall=False, target=True)
     sh = (d['psi'][ih - 1], d['u'][ih - 1], d['v'][ih - 1], d['r'][ih - 1], d['delta'][ih - 1], d['F'][ih - 1])
-    C.draw_set(ax, C.slice_set(sh, XL, YL, level=C.TAU), alpha=0.35, z=2.5)
+    C.draw_set(ax, C.slice_set(sh, XL, YL, level=SET_LEVEL), alpha=0.35, z=2.5)
     ax.plot(d['xr'][:ih], d['yr'][:ih], color=C.PH1, lw=1.3, zorder=7)
     ax.plot(d['xr'][ih - 1:], d['yr'][ih - 1:], color=C.PH2, lw=1.3, zorder=7)
     for i in np.unique(np.r_[np.linspace(0, ih - 1, 4).astype(int), ih - 1, np.linspace(ih, len(t) - 1, 3).astype(int)]):
@@ -219,7 +220,7 @@ def fig8(opt, five=None, XL=(-4.6, 1.0), YL=(-0.55, 2.5), height=2.05):
         C.draw_geometry(ax, XL, YL, wall=False, target=True)
         res, ver = F.load(run)
         if run.startswith('proposed'):
-            C.draw_set(ax, C.boundary(0, C.TAU), alpha=0.4, z=2.5)
+            C.draw_set(ax, C.boundary(0, SET_LEVEL), alpha=0.4, z=2.5)
         else:
             F.set_funnel(run)
             x = np.linspace(XL[0], -C.CX, 300); up, lo = C.funnel_curves(x)
