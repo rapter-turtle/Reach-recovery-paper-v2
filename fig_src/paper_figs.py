@@ -13,7 +13,7 @@ import ff_common as F
 
 K.PAPER = True
 K.fig5()
-K.fig6('proposed_as0.60', [F.RUNS['A'][0], F.RUNS['A'][1]])
+K.fig6('proposed_as0.60', [F.RUNS['A'][0], F.RUNS['A'][1]], sea=94)   # chosen 2026-10-12
 K.fig7('A')
 # seas: 48 RaCBF (1) strikes the outer corner of an arm at the mouth, 12 RaCBF (1) strikes the
 # mothership side, 92 and 76 RaCBF (2) stalls astern of the mouth, 10 all three dock

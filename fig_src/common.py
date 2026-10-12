@@ -323,8 +323,27 @@ def band_polys(xs, ys, V, av, level, deep=None, off=None):
     return author_polys(xs, ys, V, av, level, allow=grown)[0]
 
 
+WALL_DEEP, WALL_LAM = -0.018, 0.40   # candidate S3 (chosen 2026-10-12) for the hand over set of Fig. 6
+
+
+def band_wall_polys(xs, ys, V, av, level):
+    """Z1 band plus a deeper level beside the approach wall (candidate S3), so the set narrows into
+    the mouth instead of bulging up beside the cradle.  Only removes area."""
+    h = float(xs[1] - xs[0])
+    vs = np.array(V, dtype=float); vs[av] = 0.05; vs = ndimage.gaussian_filter(vs, 4.0); vs[av] = 1.0
+    r = int(round(BAND_OFF / h))
+    yy, xx = np.ogrid[-r:r + 1, -r:r + 1]
+    grown = ndimage.binary_dilation(vs <= BAND_DEEP, structure=(xx ** 2 + yy ** 2) <= r * r)
+    return author_polys(xs, ys, V, av, level, allow=grown,
+                        shift=wall_shift(xs, ys, av, level, WALL_DEEP, WALL_LAM))[0]
+
+
 def set_polys(xs, ys, V, av, level, method='author'):
-    return band_polys(xs, ys, V, av, level) if method == 'band' else author_polys(xs, ys, V, av, level)[0]
+    if method == 'band':
+        return band_polys(xs, ys, V, av, level)
+    if method == 'band_wall':
+        return band_wall_polys(xs, ys, V, av, level)
+    return author_polys(xs, ys, V, av, level)[0]
 
 
 def boundary(psi_deg, level=0.0, xlim=None, ylim=None, method='author'):

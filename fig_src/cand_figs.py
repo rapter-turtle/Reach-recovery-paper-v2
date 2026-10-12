@@ -84,14 +84,14 @@ def fig5():
 
 
 # ------------------------------------------------------------------ Fig 6: representative recovery
-def fig6(prop, partners):
+def fig6(prop, partners, sea=None):
     res, ver = F.load(prop)
     bres = [F.load(b)[1] for b in partners]
     cand = [i for i, r in enumerate(res) if r['outcome'] == 'success' and r.get('t_switch') is not None]
     start = lambda i: res[i]['traj']['xr'][0] + 0.5 * res[i]['traj']['yr'][0]
     cand.sort(key=start)
     hard = [i for i in cand if any(b.get(i) not in ('success',) for b in bres)]
-    k = (hard or cand)[0]
+    k = (hard or cand)[0] if sea is None else sea
     d = res[k]['traj']; t = d['t']; th = res[k]['t_switch']
     V = C.value(np.stack([d['xr'], d['yr'], d['psi'], d['u'], d['v'], d['r'], d['delta'], d['F']], 1))
     ih = int(np.argmax(d['mode'] > 0.5))
@@ -101,7 +101,7 @@ def fig6(prop, partners):
     XL = (min(-3.0, d['xr'].min() - 0.4), 1.0); YL = (-0.6, max(1.2, d['yr'].max() + 0.35))
     C.draw_geometry(ax, XL, YL, wall=False, target=True)
     sh = (d['psi'][ih - 1], d['u'][ih - 1], d['v'][ih - 1], d['r'][ih - 1], d['delta'][ih - 1], d['F'][ih - 1])
-    C.draw_set(ax, C.slice_set(sh, XL, YL, level=SET_LEVEL, method='band'), alpha=0.35, z=2.5)
+    C.draw_set(ax, C.slice_set(sh, XL, YL, level=SET_LEVEL, method='band_wall'), alpha=0.35, z=2.5)
     ax.plot(d['xr'][:ih], d['yr'][:ih], color=C.PH1, lw=1.3, zorder=7)
     ax.plot(d['xr'][ih - 1:], d['yr'][ih - 1:], color=C.PH2, lw=1.3, zorder=7)
     for i in np.unique(np.r_[np.linspace(0, ih - 1, 4).astype(int), ih - 1, np.linspace(ih, len(t) - 1, 3).astype(int)]):
@@ -139,7 +139,7 @@ def fig6(prop, partners):
     axes[3].set_xlabel('time [s]'); axes[3].set_xlim(t[0], t[-1]); fig.align_ylabels(axes)
     tag = ', '.join(f'{b[0]} a{F.alpha(b):g} {bres[n].get(k)}' for n, b in enumerate(partners))
     title(fig, f'Candidate Fig. 6   {prop}, sea {k}\nbaselines on this sea: {tag}', 1.04)
-    save(fig, f'cand_fig6_rep_{prop}', 'rep_run')
+    save(fig, f'cand_fig6_rep_{prop}' + ('' if sea is None else f'_sea{sea}'), 'rep_run')
 
 
 # ------------------------------------------------------------------ Fig 7: Monte Carlo summary

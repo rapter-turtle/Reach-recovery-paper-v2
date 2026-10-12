@@ -43,14 +43,14 @@ def interp(d, t):
 
 
 # ------------------------------------------------------------------ representative recovery
-def rep_video(prop='proposed_as0.60', sea=28, hold=1.5):
+def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
     res, _ = F.load(prop)
     r = res[sea]; d = r['traj']; t = d['t']; th = r['t_switch']
     V = C.value(np.stack([d['xr'], d['yr'], d['psi'], d['u'], d['v'], d['r'], d['delta'], d['F']], 1))
     ih = int(np.argmax(d['mode'] > 0.5))
     XL = (min(-3.0, d['xr'].min() - 0.4), 1.0); YL = (-0.6, max(1.2, d['yr'].max() + 0.35))
     sh = (d['psi'][ih - 1], d['u'][ih - 1], d['v'][ih - 1], d['r'][ih - 1], d['delta'][ih - 1], d['F'][ih - 1])
-    set_polys = C.slice_set(sh, XL, YL, level=K.SET_LEVEL, method='band')
+    set_polys = C.slice_set(sh, XL, YL, level=K.SET_LEVEL, method='band_wall')
 
     fig = plt.figure(figsize=(7.2, 3.0), dpi=200)
     gs = fig.add_gridspec(4, 2, width_ratios=[1.55, 1.0], wspace=0.32, hspace=0.2,
@@ -135,7 +135,9 @@ def rep_video(prop='proposed_as0.60', sea=28, hold=1.5):
 
 
 # ------------------------------------------------------------------ five sea comparison
-def five_video(opt='A', five=(48, 12, 92, 76, 10), XL=(-5.6, 1.0), YL=(-0.6, 4.2), speed=6.0, hold=2.0):
+def five_video(opt='A', five=(48, 12, 92, 76, 10), XL=(-5.6, 1.0), YL=(-0.6, 4.2), speed=4.0, hold=2.0,
+               t_window=54.0):
+    """t_window: simulation time shown (54 s = the first 9 s of the earlier 6x cut, where every event happens)."""
     collide, timeout, prop = F.RUNS[opt]
     runs = (prop, collide, timeout)
     fig, axs = plt.subplots(1, 3, figsize=(7.2, 2.5), dpi=200, sharey=True,
@@ -173,6 +175,7 @@ def five_video(opt='A', five=(48, 12, 92, 76, 10), XL=(-5.6, 1.0), YL=(-0.6, 4.2
     fig.legend(handles=hs, loc='upper center', ncol=6, frameon=False, bbox_to_anchor=(0.5, 0.93),
                handlelength=1.6, columnspacing=0.9, fontsize=6.8)
 
+    tmax = min(tmax, t_window)
     n = int(round(tmax / speed * FPS)) + int(hold * FPS)
     writer = FFMpegWriter(fps=FPS, bitrate=4000)
     with writer.saving(fig, str(OUT / 'trajectories_montecarlo.mp4'), dpi=200):
