@@ -346,6 +346,46 @@ def set_polys(xs, ys, V, av, level, method='author'):
     return author_polys(xs, ys, V, av, level)[0]
 
 
+def _nearest_fill(v, av):
+    """Solid cells take the value of the nearest free cell, so smoothing does not bleed walls in."""
+    idx = ndimage.distance_transform_edt(av, return_distances=False, return_indices=True)
+    return v[tuple(idx)]
+
+
+def wall_feather(xs, ys, V, off=BAND_OFF, rise=0.10):
+    """Remove the rise of V within `off` [m] of the approach wall face (author's request 2026-10-12).
+
+    Each row above the wall bottom is capped by its own value `off` left of the face, faded in over
+    the second half of that strip and over `rise` [m] above Y_WALL, so the mouth corner keeps its
+    own values.  Only lowers V, and only beside the approach wall."""
+    v = np.array(V, dtype=float)
+    i_far = int(np.argmin(np.abs(xs - (-CX - off))))
+    vf = ndimage.gaussian_filter1d(v[:, i_far], 6)
+    X, Y = np.meshgrid(xs, ys)
+    d = -CX - X
+    t = np.clip((d - 0.5 * off) / (0.5 * off), 0.0, 1.0)
+    wx = np.where(d < 0, 0.0, 0.5 * (1 + np.cos(np.pi * t)))
+    sy = np.clip((Y - Y_WALL) / rise, 0.0, 1.0)
+    w = wx * 0.5 * (1 - np.cos(np.pi * sy))
+    return v - w * np.maximum(v - vf[:, None], 0.0)
+
+
+def shade_field(xs, ys, V, av, level, polys, smooth=4.0):
+    """Display field for the shaded value map, processed like the outline: the approach wall rise
+    feathered, a Gaussian of `smooth` cells, then made consistent with the drawn outline (below
+    `level` inside, above outside) and lightly smoothed again."""
+    from matplotlib.path import Path as MPath
+    v = ndimage.gaussian_filter(_nearest_fill(wall_feather(xs, ys, V), av), smooth)
+    X, Y = np.meshgrid(xs, ys)
+    pts = np.c_[X.ravel(), Y.ravel()]
+    m = np.zeros(X.size, bool)
+    for p in polys:
+        m ^= MPath(p).contains_points(pts)
+    m = m.reshape(X.shape)
+    v = np.where(m, np.minimum(v, level - 1e-6), np.maximum(v, level + 1e-6))
+    return ndimage.gaussian_filter(_nearest_fill(v, av), 0.5 * smooth)
+
+
 def boundary(psi_deg, level=0.0, xlim=None, ylim=None, method='author'):
     """Boundary of {V <= level} on the nominal slice at psi_deg (author pipeline, or Z1 band)."""
     xs, ys, V, av, tg = value_slice(nominal_state(psi_deg), xlim or SET_XL, ylim or SET_YL, h=AUTHOR_STEP)

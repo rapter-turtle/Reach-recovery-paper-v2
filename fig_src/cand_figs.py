@@ -66,12 +66,16 @@ def fig5():
     fig, axs = plt.subplots(1, 3, figsize=(7.2, 2.55), sharey=True, gridspec_kw=dict(wspace=0.06))
     for ax, deg in zip(axs, (-10, 0, 10)):
         xs, ys, V, av, tg = C.value_slice(C.nominal_state(deg), XL, YL, h=C.AUTHOR_STEP)
-        im = ax.pcolormesh(xs, ys, np.where(av, np.nan, np.clip(V - SET_LEVEL, -0.03, 0.03)), cmap=cmap, norm=norm,
+        polys = C.set_polys(xs, ys, V, av, SET_LEVEL, 'band' if deg <= 0 else 'author')   # candidate Z1
+        # shading smoothed like the outline (author's request 2026-10-12): no rise along the approach
+        # wall face, and no green outside the drawn set
+        Vd = C.shade_field(xs, ys, V, av, SET_LEVEL, polys)
+        im = ax.pcolormesh(xs, ys, np.where(av, np.nan, np.clip(Vd - SET_LEVEL, -0.03, 0.03)), cmap=cmap, norm=norm,
                            shading='auto', rasterized=True, zorder=0.5)
         C.draw_geometry(ax, XL, YL, wall=True, target=False)
         ax.add_patch(plt.Rectangle((-C.CX, -C.CY), 2 * C.CX, 2 * C.CY, fc='none', ec=C.SET_EDGE, lw=0.6,
                                    ls=':', zorder=5))
-        for p in C.set_polys(xs, ys, V, av, SET_LEVEL, 'band' if deg <= 0 else 'author'):   # candidate Z1
+        for p in polys:
             ax.plot(p[:, 0], p[:, 1], color=C.SET_LINE, lw=0.9, zorder=4)
         ax.set_title(r'$\psi_r = %+d^\circ$' % deg if deg else r'$\psi_r = 0^\circ$')
         ax.set_xlabel(r'$x_h$ [m]'); ax.set_xticks([-3, -2, -1, 0])
