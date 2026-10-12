@@ -201,7 +201,7 @@ def fig7(opt):
     present = [v for v in F.ORDER if any(v in F.load(r)[1].values() for r in runs)]
     fig.legend(handles=[Patch(fc=F.VERDICT[v][1], ec='white', hatch=F.VERDICT[v][4], label=F.VERDICT[v][0])
                         for v in present] + [Line2D([], [], color=C.INK, lw=1.0, label='worst run')],
-               loc='lower center', ncol=len(present) + 1, frameon=False, bbox_to_anchor=(0.5, -0.36))
+               loc='lower center', ncol=len(present) + 1, frameon=False, bbox_to_anchor=(0.5, -0.20))
     title(fig, f'Candidate Fig. 7   option {opt}: {short(collide)} | {short(timeout)} | {prop}', 1.08)
     save(fig, f'cand_fig7_option{opt}', 'montecarlo_summary')
 
