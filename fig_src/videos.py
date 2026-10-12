@@ -82,7 +82,9 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
                        Patch(fc=C.SET_FILL, ec=C.SET_LINE, lw=0.9, alpha=0.6, label='set at handover')],
               loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=4, fontsize=6.5, frameon=False,
               handlelength=1.4, columnspacing=1.0, labelspacing=0.3)
-    series = [(V, r'$V$', None), (d['F'], r'$F$ [N]', (-3.0, 9.0)),
+    # the value panel is re-based on the hand over threshold (author's request 2026-10-12): V - tau,
+    # so the hand over happens where the curve crosses zero
+    series = [(V - C.TAU, r'$V$', None), (d['F'], r'$F$ [N]', (-3.0, 9.0)),
               (np.degrees(0.01 * d['delta']), r'$\delta$ [deg]', (-30.0, 30.0)), (d['avoid'], 'clearance [m]', None)]
     lines, cursors, axes = [], [], []
     for j, (y, lab, lim) in enumerate(series):
@@ -100,7 +102,7 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
         a.set_ylabel(lab, fontsize=7); a.grid(alpha=0.35); a.tick_params(labelsize=7)
         if j < 3:
             a.tick_params(labelbottom=False)
-    axes[0].axhline(0.0, color='#555555', lw=0.6, ls=':'); axes[0].axhline(C.TAU, color='#555555', lw=0.6, ls='-.')
+    axes[0].axhline(0.0, color='#555555', lw=0.6, ls='--')   # hand over threshold, V re-based so tau sits at 0
     axes[3].axhline(0.0, color=C.COLL, lw=0.6, ls=':')
     axes[3].set_xlabel('time [s]'); axes[3].set_xlim(t[0], t[-1]); fig.align_ylabels(axes)
 
