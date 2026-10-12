@@ -191,7 +191,7 @@ def fig7(opt):
                            alpha=0.5 if v == 'success' else 0.85, lw=0, zorder=3)
         ax.plot([i - 0.3, i + 0.3], [min(r['clear_before_entry'] for r in res)] * 2, color=C.INK, lw=1.0, zorder=4)
     ax.axhline(0, color=C.INK, lw=0.7, ls=':'); ax.set_xlim(-0.5, 2.5)
-    ax.set_ylabel('min. clearance before entry [m]', fontsize=7.5); ax.set_title('(c) Clearance to obstacles')
+    ax.set_ylabel('min. clearance [m]'); ax.set_title('(c) Clearance to obstacles')
     for a in axs:
         a.set_xticks(range(3)); a.set_xticklabels(names, fontsize=6.2); a.grid(axis='y', alpha=0.5)
     present = [v for v in F.ORDER if any(v in F.load(r)[1].values() for r in runs)]
