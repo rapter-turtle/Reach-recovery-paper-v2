@@ -54,7 +54,7 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
 
     fig = plt.figure(figsize=(7.2, 3.0), dpi=200)
     gs = fig.add_gridspec(4, 2, width_ratios=[1.55, 1.0], wspace=0.32, hspace=0.2,
-                          left=0.07, right=0.985, top=0.93, bottom=0.14)
+                          left=0.095, right=0.985, top=0.93, bottom=0.14)
     ax = fig.add_subplot(gs[:, 0])
     C.draw_geometry(ax, XL, YL, wall=False, target=True)
     ax.plot(*C.DP, 'D', ms=4.5, color='#333333', mec='white', mew=0.5, zorder=10)
