@@ -52,9 +52,9 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
     sh = (d['psi'][ih - 1], d['u'][ih - 1], d['v'][ih - 1], d['r'][ih - 1], d['delta'][ih - 1], d['F'][ih - 1])
     set_polys = C.slice_set(sh, XL, YL, level=K.SET_LEVEL, method='band_wall')
 
-    fig = plt.figure(figsize=(7.2, 3.0), dpi=200)
+    fig = plt.figure(figsize=(7.2, 3.4), dpi=200)
     gs = fig.add_gridspec(4, 2, width_ratios=[1.55, 1.0], wspace=0.32, hspace=0.2,
-                          left=0.095, right=0.985, top=0.93, bottom=0.14)
+                          left=0.095, right=0.985, top=0.94, bottom=0.25)
     ax = fig.add_subplot(gs[:, 0])
     C.draw_geometry(ax, XL, YL, wall=False, target=True)
     ax.plot(*C.DP, 'D', ms=4.5, color='#333333', mec='white', mew=0.5, zorder=10)
@@ -71,8 +71,8 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
                                 ec=C.PH1, alpha=0.45, lw=0.8, zorder=8))
     head, = ax.plot([], [], 'o', ms=3, color='#c2185b', zorder=9)
     hand, = ax.plot([], [], 'o', ms=5, color='k', zorder=10)
-    clock = ax.text(0.02, 0.26, '', transform=ax.transAxes, fontsize=8, va='top', color=C.INK)
-    phase = ax.text(0.02, 0.18, '', transform=ax.transAxes, fontsize=8, va='top', fontweight='bold')
+    clock = ax.text(0.98, 0.97, '', transform=ax.transAxes, fontsize=8, va='top', ha='right', color=C.INK)
+    phase = ax.text(0.98, 0.89, '', transform=ax.transAxes, fontsize=8, va='top', ha='right', fontweight='bold')
     ax.legend(handles=[Line2D([], [], color=C.PH1, lw=1.3, label='Phase 1'),
                        Line2D([], [], color=C.PH2, lw=1.3, label='Phase 2'),
                        Line2D([], [], ls='', marker='o', ms=5, color='k', label='handover'),
@@ -80,8 +80,8 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
                        Line2D([], [], ls='', marker='D', ms=4.5, color='#333333', label='DP point'),
                        Line2D([], [], ls='', marker='*', ms=8, color='#b03a2e', label='cradle center'),
                        Patch(fc=C.SET_FILL, ec=C.SET_LINE, lw=0.9, alpha=0.6, label='set at handover')],
-              loc='upper right', fontsize=6.5, framealpha=0.95, edgecolor='#cccccc', handlelength=1.4,
-              borderpad=0.4, labelspacing=0.3)
+              loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=4, fontsize=6.5, frameon=False,
+              handlelength=1.4, columnspacing=1.0, labelspacing=0.3)
     series = [(V, r'$V$', None), (d['F'], r'$F$ [N]', (-3.0, 9.0)),
               (np.degrees(0.01 * d['delta']), r'$\delta$ [deg]', (-30.0, 30.0)), (d['avoid'], 'clearance\n[m]', None)]
     lines, cursors, axes = [], [], []
