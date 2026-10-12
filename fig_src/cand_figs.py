@@ -24,6 +24,7 @@ C.style()
 F.OUTDIR.mkdir(parents=True, exist_ok=True)
 
 
+NOM, CON = r'RaCBF$_{\mathrm{nom}}$', r'RaCBF$_{\mathrm{con}}$'
 PAPER = False      # True: manuscript figures into fig/ (no candidate titles, (1)/(2) labels)
 SET_LEVEL = -0.006 # level the learned set is DRAWN at (author's choice 2026-10-11); the run handed over at C.TAU = -0.005
 
@@ -43,11 +44,11 @@ def title(fig, text, y):
 
 
 def name_of(run, opt_runs):
-    """Panel name: the manuscript calls the two gains RaCBF (1) and (2)."""
+    """Panel name: the manuscript calls the two gains RaCBF_nom and RaCBF_con (author 2026-10-12)."""
     if run.startswith('proposed'):
         return 'Proposed'
     if PAPER:
-        return 'RaCBF (1)' if run == opt_runs[0] else 'RaCBF (2)'
+        return NOM if run == opt_runs[0] else CON
     return F.label(run)
 
 
@@ -150,7 +151,7 @@ def fig6(prop, partners, sea=None):
 def fig7(opt):
     collide, timeout, prop = F.RUNS[opt]
     runs = [prop, collide, timeout]
-    names = (['Proposed', 'RaCBF\n(1)', 'RaCBF\n(2)'] if PAPER else
+    names = (['Proposed', NOM, CON] if PAPER else
              ['Proposed'] + ['RaCBF\n' + r'$\alpha_{dock}$' + f'={F.alpha(r):g}' for r in (collide, timeout)])
     fig, axs = plt.subplots(1, 3, figsize=(7.2, 1.75), gridspec_kw=dict(wspace=0.38))
     rng = np.random.default_rng(3)

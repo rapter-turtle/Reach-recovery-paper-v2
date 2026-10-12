@@ -19,7 +19,7 @@ import ff_common as F
 import common as C
 
 C.style()
-K.PAPER = True          # manuscript panel names: Proposed, RaCBF (1), RaCBF (2)
+K.PAPER = True          # manuscript panel names: Proposed, RaCBF_nom, RaCBF_con
 OUT = F.FF.parent / 'videos'
 OUT.mkdir(exist_ok=True)
 FPS = 30
