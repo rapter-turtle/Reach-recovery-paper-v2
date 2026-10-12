@@ -83,7 +83,7 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
               loc='upper center', bbox_to_anchor=(0.5, -0.2), ncol=4, fontsize=6.5, frameon=False,
               handlelength=1.4, columnspacing=1.0, labelspacing=0.3)
     series = [(V, r'$V$', None), (d['F'], r'$F$ [N]', (-3.0, 9.0)),
-              (np.degrees(0.01 * d['delta']), r'$\delta$ [deg]', (-30.0, 30.0)), (d['avoid'], 'clearance\n[m]', None)]
+              (np.degrees(0.01 * d['delta']), r'$\delta$ [deg]', (-30.0, 30.0)), (d['avoid'], 'clearance [m]', None)]
     lines, cursors, axes = [], [], []
     for j, (y, lab, lim) in enumerate(series):
         a = fig.add_subplot(gs[j, 1], sharex=axes[0] if axes else None); axes.append(a)
@@ -97,7 +97,7 @@ def rep_video(prop='proposed_as0.60', sea=94, hold=1.5):
         a.set_ylim(lo - pad, hi + pad)
         lines.append(a.plot([], [], color='#1b7837' if j in (0, 3) else (C.PH1 if j == 2 else '#b03a2e'), lw=1.1)[0])
         cursors.append(a.axvline(t[0], color='#777777', lw=0.7, ls='--'))
-        a.set_ylabel(lab, fontsize=8); a.grid(alpha=0.35); a.tick_params(labelsize=7)
+        a.set_ylabel(lab, fontsize=7); a.grid(alpha=0.35); a.tick_params(labelsize=7)
         if j < 3:
             a.tick_params(labelbottom=False)
     axes[0].axhline(0.0, color='#555555', lw=0.6, ls=':'); axes[0].axhline(C.TAU, color='#555555', lw=0.6, ls='-.')
