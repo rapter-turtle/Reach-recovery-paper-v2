@@ -58,12 +58,14 @@ def short(run):
 # ------------------------------------------------------------------ Fig 5: the new set
 def fig5():
     XL, YL = (-3.0, 0.9), (-0.6, 2.0)
-    norm = TwoSlopeNorm(vmin=-0.04, vcenter=0.0, vmax=0.04)
+    # V is re-based on the drawn boundary level (author's request 2026-10-12): the shading shows
+    # V - SET_LEVEL, so the outline sits at zero, where the colour scale turns white
+    norm = TwoSlopeNorm(vmin=-0.03, vcenter=0.0, vmax=0.03)
     cmap = C.VCMAP.copy(); cmap.set_bad('#e9e9e9')
     fig, axs = plt.subplots(1, 3, figsize=(7.2, 2.55), sharey=True, gridspec_kw=dict(wspace=0.06))
     for ax, deg in zip(axs, (-10, 0, 10)):
         xs, ys, V, av, tg = C.value_slice(C.nominal_state(deg), XL, YL, h=C.AUTHOR_STEP)
-        im = ax.pcolormesh(xs, ys, np.where(av, np.nan, np.clip(V, -0.04, 0.04)), cmap=cmap, norm=norm,
+        im = ax.pcolormesh(xs, ys, np.where(av, np.nan, np.clip(V - SET_LEVEL, -0.03, 0.03)), cmap=cmap, norm=norm,
                            shading='auto', rasterized=True, zorder=0.5)
         C.draw_geometry(ax, XL, YL, wall=True, target=False)
         ax.add_patch(plt.Rectangle((-C.CX, -C.CY), 2 * C.CX, 2 * C.CY, fc='none', ec=C.SET_EDGE, lw=0.6,
@@ -74,7 +76,7 @@ def fig5():
         ax.set_xlabel(r'$x_h$ [m]'); ax.set_xticks([-3, -2, -1, 0])
     axs[0].set_ylabel(r'$y_h$ [m]')
     cb = fig.colorbar(im, cax=fig.add_axes([0.915, 0.2, 0.012, 0.62]))
-    cb.set_label('value $V$', fontsize=8.5); cb.set_ticks([-0.04, -0.02, 0, 0.02, 0.04]); cb.ax.tick_params(labelsize=7)
+    cb.set_label('value $V$', fontsize=8.5); cb.set_ticks([-0.03, -0.015, 0, 0.015, 0.03]); cb.ax.tick_params(labelsize=7)
     fig.legend(handles=[Patch(fc=C.ARM, label='cradle'), Patch(fc=C.MS_FILL, ec=C.MS_EDGE, label='mothership'),
                         Patch(fc='#e9e9e9', ec='#9a9a9a', hatch='////', lw=0, label='approach wall'),
                         Line2D([], [], color=C.SET_LINE, lw=0.9, label=r'set boundary $V=0$')],
